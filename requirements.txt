@@ -1,0 +1,107 @@
+cs50
+Flask
+Flask-Session
+requests
+
+export API_KEY=pk_9fea04d820f6433cbfd2eaec601e843c
+
+TABLE Stocks
+
+id
+symbol
+name
+shares
+price
+total
+owner_id **
+
+CREATE TABLE 'stocks' (
+'stock_id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+'owner_name' TEXT NOT NULL,
+'stock_symbol' TEXT NOT NULL,
+'stock_name' TEXT NOT NULL,
+'shares' NUMERIC NOT NULL,
+'unit_price' NUMERIC NOT NULL,
+'total_price' NUMERIC NOT NULL)
+
+TABLE User
+
+id **
+name
+hash (password)
+
+
+TABLE History
+
+id
+symbol
+shares
+transaction_price
+transaction_date
+transaction_type
+owner_id **
+
+CREATE TABLE 'history' (
+'history_id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+'user_name' TEXT NOT NULL,
+'symbol' TEXT NOT NULL,
+'amount' TEXT NOT NULL,
+'t_price' NUMERIC NOT NULL,
+'t_type' TEXT NOT NULL,
+'t_date' DATETIME DEFAULT CURRENT_TIMESTAMP)
+
+
+to track the transaction time stamps I split data into two tables but it doesnt work as once I use variables sql probably didnt reach or use them
+also the command order prorbaby was wrong
+but next time I'm going to create main stocks table to track all the transactions
+also I ll create another table to track existing stocks
+after inserting the data to the history table I'll extract that data to insert existing stocks table
+i can use select data function which may not end well but
+also i can create a good order of commands and global variables to hold the data and insert them to the second table
+be careful about the globals variables order
+check how the scoping works in pyhton to ensure you place them in the right order
+also check the sql commands if you can use their results again and again if you can assign them into variables
+and dont forget the sql select retuns LIST OF DICTIONARIES !!!!!!
+be careful extracting the data
+
+
+share_dict = lookup(request.form.get("symbol"))
+        shares = int(request.form.get("shares"))
+
+        if not request.form.get("symbol"):
+            return apology("must provide symbol", 403)
+        elif not request.form.get("shares"):
+            return apology("must provide number", 403)
+
+        owner_name = session["user_id"]
+        symbol = share_dict["symbol"]
+        stock_name = share_dict["name"]
+        price_unit = share_dict["price"]
+        total = float(shares) * price_unit
+
+        # Finding the balance of the user
+        cash_list = db.execute("SELECT cash FROM users WHERE username=:username", username=owner_name)
+        cash_dict = cash_list[0]
+        balance = cash_dict["cash"]
+
+        # If user don't have enough cash
+        if balance < total:
+            return apology("don't have enough cash")
+        # If user has enough cash
+        else:
+            cash = balance - total
+            db.execute("UPDATE users SET cash = ?", cash)
+            db.execute("INSERT INTO history (user_name, symbol, amount, t_price, t_type) VALUES (:user_name, :symbol, :amount, :t_price, :t_type)", user_name=owner_name, symbol=symbol, amount=shares, t_price=price_unit, t_type="Purchase")
+
+            existing = db.execute("SELECT stock_symbol FROM stocks WHERE owner_name = ? AND stock_symbol = ?", owner_name, symbol)
+            if len(existing) > 0:
+
+                existing_shares_list = db.execute("SELECT shares, total_price FROM stocks WHERE owner_name = ? AND stock_symbol = ?", owner_name, symbol)
+                shares = shares + existing_shares_list[0]["shares"]
+                total_price = total + existing_shares_list[0]["total_price"]
+
+                db.execute("UPDATE stocks SET shares = ?, total_price = ?", shares, total)
+
+            else:
+                db.execute("INSERT INTO stocks (owner_name, stock_symbol, stock_name, shares, unit_price, total_price) VALUES (:owner_name, :stock_symbol, :stock_name, :shares, :unit_price, :total_price)", owner_name=owner_name, stock_symbol=symbol, stock_name=stock_name, shares=shares, unit_price=price_unit, total_price=total)
+        return redirect("/")

@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+    <table class="table table-hover">
+        <tr class="table-info">
+            <th scope="col">Symbol</th>
+            <th scope="col">Shares</th>
+            <th scope="col">Transaction Price Per Stock</th>
+            <th scope="col">Transaction Type</th>
+            <th scope="col">Transaction Date</th>
+        </tr>
+        {% for row in rows %}
+            <tr class="table-light">
+                <td>{{ row.symbol }}</td>
+                <td>{{ row.amount }}</td>
+                <td>{{ row.t_price }}</td>
+                <td>{{ row.t_type }}</td>
+                <td>{{ row.t_date }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
